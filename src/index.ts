@@ -50,9 +50,11 @@ client.once('clientReady', () => {
 });
 
 client.on('interactionCreate', async (interaction: Interaction) => {
-  if (interaction.isChatInputCommand?.()) {
+  console.log(`[DEBUG] Interaction received! Type: ${interaction.type}`);
+  
+  if (interaction.isChatInputCommand()) {
     const commandName = interaction.commandName;
-    console.log(`Received command: ${commandName}`);
+    console.log(`[DEBUG] Slash command received: ${commandName}`);
 
     if (commandName === 'spam') {
       const message = interaction.options.getString('message');
@@ -100,13 +102,19 @@ client.on('interactionCreate', async (interaction: Interaction) => {
       } else {
         await interaction.reply('No active spam session found!');
       }
+    } else if (commandName === 'stop') {
+      await interaction.reply('🛑 Shutting down the bot...');
+      console.log('Bot shutdown command received. Exiting...');
+      process.exit(0);
     }
+  } else {
+    console.log(`[DEBUG] Non-slash-command interaction received. Type: ${interaction.type}`);
   }
 });
 
 client.on('messageCreate', async (message) => {
-  // Ignore bot messages
-  if (message.author.bot) return;
+  // Ignore bot messages and messages from bots
+  if (message.author.bot || message.author.id === client.user?.id) return;
 
   // Check if the message mentions the bot
   if (message.mentions.has(client.user?.id || '')) {
@@ -125,31 +133,36 @@ client.on('messageCreate', async (message) => {
 
       // Check for user questions
       const questionMatch = userVariations.userQuestions.find((q: any) => {
-        const questionLower = q.question.toLowerCase();
+        const questionLower = (typeof q === 'string' ? q : q.question).toLowerCase();
         return messageContent.includes(questionLower) || messageContent.startsWith(questionLower.substring(0, 5));
       });
 
       // Check for user commands
       const commandMatch = userVariations.userCommands.find((c: any) => {
-        const commandLower = c.command.toLowerCase();
+        const commandLower = (typeof c === 'string' ? c : c.command).toLowerCase();
         return messageContent.includes(commandLower);
       });
 
-      console.log(`[DEBUG] isGreeting: ${isGreeting}, question: ${questionMatch?.question}, command: ${commandMatch?.command}`);
+      console.log(`[DEBUG] isGreeting: ${isGreeting}, question: ${questionMatch}, command: ${commandMatch}`);
 
       let response = '';
 
       if (isGreeting) {
         response = variations.greetings[Math.floor(Math.random() * variations.greetings.length)];
       } else if (questionMatch) {
-        response = questionMatch.answer;
+        response = typeof questionMatch === 'string' 
+          ? "Great question! I'm here to help. What would you like to know?" 
+          : questionMatch.answer;
       } else if (commandMatch) {
-        response = commandMatch.answer;
+        response = typeof commandMatch === 'string' 
+          ? "I like your style! What would you like me to do?" 
+          : commandMatch.answer;
       } else {
         response = variations.greetings[Math.floor(Math.random() * variations.greetings.length)];
       }
 
       await message.reply(response);
+      console.log(`[DEBUG] Reply sent: "${response}"`);
     } catch (err) {
       console.error('Failed to reply to mention:', err);
     }
