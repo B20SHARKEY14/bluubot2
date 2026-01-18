@@ -1,7 +1,26 @@
 import dotenv from 'dotenv';
 import { Client, GatewayIntentBits, Interaction } from 'discord.js';
+import * as fs from 'fs';
+import * as path from 'path';
 
 dotenv.config();
+
+// Load greeting variations
+const variationsPath = path.join(__dirname, '../variations.json');
+const variations = JSON.parse(fs.readFileSync(variationsPath, 'utf-8'));
+
+// Load user variations
+const userVariationsPath = path.join(__dirname, '../user-variations.json');
+const userVariations = JSON.parse(fs.readFileSync(userVariationsPath, 'utf-8'));
+
+// Spam tracking
+interface SpamSession {
+  channelId: string;
+  message: string;
+  interval: NodeJS.Timeout;
+}
+
+const spamSessions = new Map<string, SpamSession>();
 
 const token = process.env.DISCORD_TOKEN;
 const targetUserEnv = process.env.TARGET_USER || 'b20sharkey14_78548';
@@ -15,11 +34,12 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.DirectMessages
   ]
 });
 
-client.once('ready', () => {
+client.once('clientReady', () => {
   console.log(`Bluubot logged in as ${client.user?.tag}`);
   // Notify target user on startup
   if (token === 'MOCK_TOKEN') {
@@ -30,9 +50,109 @@ client.once('ready', () => {
 });
 
 client.on('interactionCreate', async (interaction: Interaction) => {
-  if (interaction.isChatInputCommand && interaction.isChatInputCommand()) {
-    console.log(`Received command: ${interaction.commandName}`);
-    // Placeholder: command responses will be implemented later
+  if (interaction.isChatInputCommand?.()) {
+    const commandName = interaction.commandName;
+    console.log(`Received command: ${commandName}`);
+
+    if (commandName === 'spam') {
+      const message = interaction.options.getString('message');
+      const userId = interaction.user.id;
+      const channelId = interaction.channelId;
+
+      if (!message || !channelId) {
+        await interaction.reply('Invalid spam command!');
+        return;
+      }
+
+      // Stop any existing spam for this user
+      if (spamSessions.has(userId)) {
+        clearInterval(spamSessions.get(userId)?.interval);
+        spamSessions.delete(userId);
+      }
+
+      // Start new spam session
+      const channel = await interaction.client.channels.fetch(channelId);
+      if (!channel?.isTextBased()) {
+        await interaction.reply('Channel not found or is not a text channel!');
+        return;
+      }
+
+      const interval = setInterval(async () => {
+        try {
+          await channel.send(message);
+        } catch (err) {
+          console.error('Failed to send spam message:', err);
+          clearInterval(interval);
+          spamSessions.delete(userId);
+        }
+      }, 1000); // Send every 1 second
+
+      spamSessions.set(userId, { channelId, message, interval });
+      await interaction.reply(`🚀 Spamming "${message}" in this channel! Use /stopspam to stop.`);
+    } else if (commandName === 'stopspam') {
+      const userId = interaction.user.id;
+
+      if (spamSessions.has(userId)) {
+        const session = spamSessions.get(userId);
+        clearInterval(session?.interval);
+        spamSessions.delete(userId);
+        await interaction.reply('✅ Spam stopped!');
+      } else {
+        await interaction.reply('No active spam session found!');
+      }
+    }
+  }
+});
+
+client.on('messageCreate', async (message) => {
+  // Ignore bot messages
+  if (message.author.bot) return;
+
+  // Check if the message mentions the bot
+  if (message.mentions.has(client.user?.id || '')) {
+    try {
+      // Remove the mention from the message for cleaner text analysis
+      const messageContent = message.content
+        .replace(/<@!?\d+>/g, '') // Remove mention tags
+        .toLowerCase()
+        .trim();
+
+      console.log(`[DEBUG] Cleaned message: "${messageContent}"`);
+
+      // Check for user greetings (just check for greeting words, not @bluubot)
+      const greetingWords = ['hello', 'hi', 'hey', 'wassup', 'yo', 'heya', 'heyo', "what's up"];
+      const isGreeting = greetingWords.some((word) => messageContent.includes(word));
+
+      // Check for user questions
+      const questionMatch = userVariations.userQuestions.find((q: any) => {
+        const questionLower = q.question.toLowerCase();
+        return messageContent.includes(questionLower) || messageContent.startsWith(questionLower.substring(0, 5));
+      });
+
+      // Check for user commands
+      const commandMatch = userVariations.userCommands.find((c: any) => {
+        const commandLower = c.command.toLowerCase();
+        return messageContent.includes(commandLower);
+      });
+
+      console.log(`[DEBUG] isGreeting: ${isGreeting}, question: ${questionMatch?.question}, command: ${commandMatch?.command}`);
+
+      let response = '';
+
+      if (isGreeting) {
+        response = variations.greetings[Math.floor(Math.random() * variations.greetings.length)];
+      } else if (questionMatch) {
+        response = questionMatch.answer;
+      } else if (commandMatch) {
+        response = commandMatch.answer;
+      } else {
+        response = variations.greetings[Math.floor(Math.random() * variations.greetings.length)];
+      }
+
+      await message.reply(response);
+    } catch (err) {
+      console.error('Failed to reply to mention:', err);
+    }
   }
 });
 

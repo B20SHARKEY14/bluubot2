@@ -1,0 +1,30 @@
+{
+  "userGreetings": [
+    "@bluubot hello",
+    "@bluubot hi",
+    "@bluubot hey",
+    "@bluubot wassup",
+    "@bluubot yo",
+    "@bluubot heya",
+    "@bluubot heyo",
+    "@bluubot what's up"
+  ],
+  "userQuestions": [
+    "Can you help me?",
+    "What can you do?",
+    "How does this work?",
+    "Can I get some info?",
+    "Tell me something useful",
+    "What's your purpose?",
+    "Got any tips?"
+  ],
+  "userCommands": [
+    "show me something cool",
+    "do something",
+    "surprise me",
+    "tell me a joke",
+    "give me a fact",
+    "what's new",
+    "check status"
+  ]
+}
