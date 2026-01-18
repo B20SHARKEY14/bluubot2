@@ -72,14 +72,14 @@ client.on('interactionCreate', async (interaction: Interaction) => {
 
       // Start new spam session
       const channel = await interaction.client.channels.fetch(channelId);
-      if (!channel?.isTextBased()) {
+      if (!channel || !channel.isTextBased()) {
         await interaction.reply('Channel not found or is not a text channel!');
         return;
       }
 
       const interval = setInterval(async () => {
         try {
-          await channel.send(message);
+          await (channel as any).send(message);
         } catch (err) {
           console.error('Failed to send spam message:', err);
           clearInterval(interval);
