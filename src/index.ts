@@ -106,6 +106,13 @@ client.on('interactionCreate', async (interaction: Interaction) => {
       await interaction.reply('🛑 Shutting down the bot...');
       console.log('Bot shutdown command received. Exiting...');
       process.exit(0);
+    } else if (commandName === 'spamstatus') {
+      if (spamSessions.size === 0) {
+        await interaction.reply("${Message}")
+      } else {
+        let Message = `There are currently ${spamSessions.size} active spam session(s):\n`;
+        await interaction.reply("${Message}");
+      }
     }
   } else {
     console.log(`[DEBUG] Non-slash-command interaction received. Type: ${interaction.type}`);

@@ -32,6 +32,10 @@ const commands = [
   {
     name: 'stop',
     description: 'Shut down the bot'
+  },
+  {
+    name: 'spamstatus',
+    description: 'Check the status of active spam sessions'
   }
 ];
 
