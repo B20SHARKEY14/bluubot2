@@ -40,6 +40,10 @@ const commands = [
   {
     name: 'rng',
     description: 'Generate a random number between 1 and 100'
+  },
+  {
+    name: 'stock',
+    description: 'Get the current stock price for a certain currency'
   }
 ];
 

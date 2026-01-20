@@ -2,6 +2,42 @@ import dotenv from 'dotenv';
 import { Client, GatewayIntentBits, Interaction } from 'discord.js';
 import * as fs from 'fs';
 import * as path from 'path';
+import fetch from 'node-fetch';
+
+type YahooQuoteResponse = {
+  quoteResponse: {
+    result: Array<{
+      regularMarketPrice: number;
+    }>;
+  };
+};
+
+type CurrencyConvertResponse = {
+  result: number;
+};
+
+async function getStockPrice(symbol: string) {
+  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`;
+  const res = await fetch(url);
+  const data = (await res.json()) as YahooQuoteResponse;
+
+  return data.quoteResponse.result[0].regularMarketPrice;
+
+  if (!res || res.regularMarketPrice === undefined) {
+    throw new Error('Invalid stock symbol or data not found');
+  }
+
+  return res.regularMarketPrice;
+}
+
+async function convertCurrency(amount: number, to: string) {
+  const url = `https://api.exchangerate.host/convert?from=USD&to=${to}&amount=${amount}`;
+  const res = await fetch(url);
+  const data = (await res.json()) as CurrencyConvertResponse;
+
+  return data.result;
+}
+
 
 dotenv.config();
 
@@ -111,11 +147,13 @@ client.on('interactionCreate', async (interaction: Interaction) => {
         await interaction.reply("${Message}")
       } else {
         let Message = `There are currently ${spamSessions.size} active spam session(s):\n`;
-        await interaction.reply("${Message}");
+        await interaction.reply(`${Message}`);
       }
     } else if (commandName === 'rng') {
       const randomNumber = Math.floor(Math.random() * 100) + 1;
       await interaction.reply(`🎲 Your random number is: ${randomNumber}`);
+    } else if (commandName === 'stock') {
+
     }
   } else {
     console.log(`[DEBUG] Non-slash-command interaction received. Type: ${interaction.type}`);
