@@ -36,6 +36,10 @@ const commands = [
   {
     name: 'spamstatus',
     description: 'Check the status of active spam sessions'
+  },
+  {
+    name: 'rng',
+    description: 'Generate a random number between 1 and 100'
   }
 ];
 

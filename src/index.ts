@@ -113,6 +113,9 @@ client.on('interactionCreate', async (interaction: Interaction) => {
         let Message = `There are currently ${spamSessions.size} active spam session(s):\n`;
         await interaction.reply("${Message}");
       }
+    } else if (commandName === 'rng') {
+      const randomNumber = Math.floor(Math.random() * 100) + 1;
+      await interaction.reply(`🎲 Your random number is: ${randomNumber}`);
     }
   } else {
     console.log(`[DEBUG] Non-slash-command interaction received. Type: ${interaction.type}`);
