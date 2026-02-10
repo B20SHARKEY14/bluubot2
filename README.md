@@ -1,4 +1,4 @@
-# Bluubot (TypeScript Discord bot skeleton)
+# Bluubot 
 
 Quick setup instructions:
 
@@ -22,4 +22,4 @@ npm run build
 npm start
 ```
 
-I've created a minimal `src/index.ts` that logs the bot in and stubs command handling. Tell me how you want commands and responses implemented next.
+I've created a minimal `src/index.ts` that logs the bot in and stubs command handling.
